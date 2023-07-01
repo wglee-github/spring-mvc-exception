@@ -1,8 +1,17 @@
 package hello.exception.servlet;
 
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +40,34 @@ public class ErrorPageController {
 		log.info("errorPage 500");
 		printErrorInfo(request);
 		return "/error-page/500";
+	}
+	
+	/**
+	 * 	produces = MediaType.APPLICATION_JSON_VALUE 의 뜻은 클라이언트가 요청하는 HTTP Header의 
+		Accept 의 값이 application/json 일 때 해당 메서드가 호출된다는 것이다. 결국 클라어인트가 받고 
+		싶은 미디어타입이 json이면 이 컨트롤러의 메서드가 호출된다. 
+	 */
+	@RequestMapping(value = "/error-page/500", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<Map<String, Object>> errorPage500Api(HttpServletRequest request, HttpServletResponse response) {
+		
+		log.info("API errorPage 500");
+		
+		Map<String, Object> result = new LinkedHashMap<>();	// 순서보장하는 LinkedHashMap, HashMap은 순서를 보장하지 않는다.
+		Exception ex = (Exception)request.getAttribute(ERROR_EXCEPTION);
+		result.put("status", request.getAttribute(ERROR_STATUS_CODE));
+		result.put("message", ex.getMessage());
+		
+		Integer statusCode = (Integer)request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+		
+		log.info("status code 1 = {}", request.getAttribute(ERROR_STATUS_CODE));
+		log.info("status code 2 = {}", statusCode);
+		
+		/**
+		 *  Jackson 라이브러리는 Map 을 JSON 구조로 변환할 수 있다.
+			ResponseEntity 를 사용해서 응답하기 때문에 메시지 컨버터가 동작하면서 클라이언트에 JSON이 반환된다.
+		 */
+		return new ResponseEntity<>(result, HttpStatus.valueOf(statusCode));
+	
 	}
 	
 	private void printErrorInfo(HttpServletRequest request) {
